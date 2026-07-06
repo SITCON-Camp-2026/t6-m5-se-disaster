@@ -10,6 +10,7 @@
 7. 遇到外部資料格式不一致時，優先寫 adapter，不要直接污染 core schema。
 8. 不得自行修改 `CommonRecord`。若需要擴充 family schema，必須更新 `docs/data-contract.md` 與測試。
 9. AI 輸出必須對應 acceptance criteria。
-10. 完成前執行 `pnpm run check`。
-11. 重大設計決策記錄於 `docs/decisions.md`。
-12. 不確定需求時，不可自行補完為救災決策。
+10. 使用 AI / Coding Agent 完成重要工作時，必須更新 `docs/ai-log.md`；不需要逐字貼 prompt，但要記錄任務、AI 建議、採用或拒絕、人類判斷理由，以及相關檔案或 commit。
+11. 完成前執行 `pnpm run check`。
+12. 重大設計決策記錄於 `docs/decisions.md`。
+13. 不確定需求時，不可自行補完為救災決策。

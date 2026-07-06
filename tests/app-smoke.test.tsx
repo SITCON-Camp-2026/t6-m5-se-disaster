@@ -5,6 +5,6 @@ import { App } from "../src/app/App";
 describe("App", () => {
   it("renders starter title", () => {
     render(<App />);
-    expect(screen.getByText("災害資訊積木 Starter")).toBeInTheDocument();
+    expect(screen.getByText("災害資訊積木起始專案")).toBeInTheDocument();
   });
 });

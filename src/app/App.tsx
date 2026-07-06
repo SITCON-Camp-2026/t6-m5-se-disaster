@@ -18,11 +18,11 @@ import { safeParseFixture } from "../lib/load-fixture";
 type TabKey = "messy" | "reports" | "sites" | "tasks" | "assignments";
 
 const tabs: Array<{ key: TabKey; label: string }> = [
-  { key: "messy", label: "Phase 0 混亂資料" },
-  { key: "reports", label: "Reports" },
-  { key: "sites", label: "Sites" },
-  { key: "tasks", label: "Tasks" },
-  { key: "assignments", label: "Assignments" },
+  { key: "messy", label: "第一階段原始資訊" },
+  { key: "reports", label: "通報" },
+  { key: "sites", label: "地點" },
+  { key: "tasks", label: "志工任務" },
+  { key: "assignments", label: "人員指派" },
 ];
 
 export function App() {
@@ -82,10 +82,9 @@ export function App() {
     <main className="layout">
       <header className="hero">
         <p className="eyebrow">SITCON Camp 2026</p>
-        <h1>災害資訊積木 Starter</h1>
+        <h1>災害資訊積木起始專案</h1>
         <p>
-          先面對混亂資料，再透過 spec、schema、adapter
-          與測試，把前端原型做成可交接的資訊元件。
+          先面對混亂資料，再透過規格、資料格式、轉換器與測試，把前端原型做成可交接的資訊元件。
         </p>
       </header>
 

@@ -10,52 +10,54 @@
 - `docs/brief.md`
 - `docs/output-paths.md`
 - `src/fixtures/phase-0/messy-reports.json`
-- starter UI
+- 起始畫面
 
 ## 你要做什麼
 
-做一個最小前端介面，讓下一位協作者看懂：
+把網頁改造成一個資訊整理工作台，讓下一位協作者可以：
 
-1. 目前有哪些資訊
-2. 資料從哪裡來
-3. 哪些已確認，哪些需要人工確認
-4. 哪些欄位你們不知道怎麼判斷
-5. 哪些資料不能直接進系統
+1. 左邊看目前收到的原始資訊
+2. 右邊逐步判斷它們比較像是通報、地點狀態、志工任務，還是人員指派
+3. 清楚標示哪些資訊還不能判斷
+4. 清楚標示哪些資訊還不能相信
+5. 清楚標示哪些資訊不能直接變成任務
 
-這一階段不是找出唯一正確答案，而是讓混亂和不確定被看見。
+這一階段不是找出唯一正確答案，也不是把資料整理成乾淨模型，而是讓混亂資訊如何被判斷、卡住、保留不確定性被看見。
 
 ## 前 10 分鐘
 
-1. 開 starter UI；若還沒開，在 repo 裡跑 `pnpm install`、`pnpm dev`，再打開 localhost URL。
+1. 開起始畫面；若還沒開，在 repo 裡跑 `pnpm install`、`pnpm dev`，再打開 localhost URL。
 2. 看 `src/app/App.tsx`，確認畫面從哪裡 render。
-3. 看 `messy-reports.json`，找 raw text、source、status、updatedAt 類似欄位。
-4. 決定用列表、表格或卡片顯示。
+3. 看 `messy-reports.json`，找原文、來源、查核狀態、更新時間等欄位。
+4. 決定工作台版面，讓原始資訊和判斷過程能同時被看見。
 5. 若問 Coding Agent，先請它分析資料，不要直接改 code。
 
 不要爬社群、查地圖、補真實地址或從外部網站補資料。
 
 ## 成果放哪裡
 
-- UI：`src/app/App.tsx`、`src/components/`，或 `src/features/phase-0/`
+- 畫面：`src/app/App.tsx`、`src/components/`，或 `src/features/phase-0/`
 - 資料：只讀 `src/fixtures/phase-0/messy-reports.json`
 - 文件：`docs/phase0-observations.md`、`docs/ai-log.md`
 
-Phase 0 可以直接顯示 dirty records，但畫面要標示「這不是 normalized data」。
+Phase 0 可以直接顯示未整理資料，但畫面要標示「這還不是整理後資料」。
 
 ## 不做什麼
 
 - 不做完整產品、角色權限、後端、資料庫、localStorage、外部 API、地圖
 - 不修改 `CommonRecord`
-- 不把 dirty data 移進 `src/fixtures/shared/` 假裝乾淨
+- 不把未整理資料移進 `src/fixtures/shared/` 假裝乾淨
 
 ## 必須交付
 
-- [ ] UI 顯示所有 phase-0 messy records
-- [ ] 首頁能看到 Phase 0 整理方式
-- [ ] 每筆至少顯示 raw text、source、verification status、updatedAt
+- [ ] 畫面顯示所有 Phase 0 原始資料
+- [ ] 首頁能看到原始資訊和整理工作台
+- [ ] 每筆至少顯示原文、來源、查核狀態、更新時間
 - [ ] `needs_review` / `unverified` 有明顯標示
+- [ ] 能看出資料可能對應到通報、地點狀態、志工任務或人員指派
 - [ ] 至少標示 3 個「我們不知道如何判斷」
-- [ ] 寫出 demo render path
+- [ ] 至少標示 3 個「不能直接變成任務」的原因
+- [ ] 寫出畫面從哪個檔案進入
 - [ ] `docs/phase0-observations.md` 有初步紀錄
 - [ ] `docs/ai-log.md` 有一筆 AI 使用紀錄
 

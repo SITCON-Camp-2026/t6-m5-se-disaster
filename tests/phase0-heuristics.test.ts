@@ -13,12 +13,18 @@ describe("phase 0 heuristics", () => {
     );
   });
 
-  it("creates conservative safety drafts for all records", () => {
+  it("creates conservative safety placeholders for all records", () => {
     const judgements = messyReports.map(createPhase0Judgement);
 
     expect(judgements).toHaveLength(messyReports.length);
     expect(
       judgements.filter((judgement) => judgement.unsafeToActDirectly),
+    ).toHaveLength(messyReports.length);
+    expect(
+      judgements.filter((judgement) => judgement.possibleKind === "unknown"),
+    ).toHaveLength(messyReports.length);
+    expect(
+      judgements.filter((judgement) => judgement.confidence === "low"),
     ).toHaveLength(messyReports.length);
   });
 

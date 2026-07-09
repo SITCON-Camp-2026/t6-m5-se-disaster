@@ -45,17 +45,40 @@ describe("App", () => {
     expect(screen.getAllByText("未查核").length).toBeGreaterThan(0);
   });
 
-  it("keeps draft CRUD as learner work instead of starter output", () => {
+  it("lets learners edit, delete, create, and reset phase 0 drafts", () => {
     render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
-    expect(screen.getByText("尚未建立整理草稿")).toBeInTheDocument();
-    expect(
-      screen.getByText(/請 agent 加上建立、編輯、刪除或重設整理草稿/),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/已產生 \d+ 筆安全邊界草稿/),
-    ).not.toBeInTheDocument();
+    expect(screen.getByText("整理草稿")).toBeInTheDocument();
+    const suppliesFilter = screen.getAllByRole("button", {
+      name: /物資需求/,
+    })[0];
+    expect(suppliesFilter).toBeInTheDocument();
+    expect(screen.getAllByText("人力需求").length).toBeGreaterThan(0);
+    expect(screen.queryByText("第一階段完成檢查")).not.toBeInTheDocument();
+
+    fireEvent.click(suppliesFilter);
+    fireEvent.click(screen.getByRole("button", { name: /M-003/ }));
+
+    fireEvent.change(screen.getByLabelText("候選類型"), {
+      target: { value: "site_status_candidate" },
+    });
+    expect(screen.getByLabelText("候選類型")).toHaveValue(
+      "site_status_candidate",
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /全部/ }));
+    fireEvent.click(screen.getByRole("button", { name: /M-003/ }));
+    fireEvent.click(screen.getByRole("button", { name: "刪除草稿" }));
+    expect(screen.getByText("M-003 仍只保留原始資訊")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "建立這筆草稿" }));
+    expect(screen.getByText("M-003 的候選判斷")).toBeInTheDocument();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "重設為 agent 預填草稿" }),
+    );
+    expect(screen.getByText("M-001 的候選判斷")).toBeInTheDocument();
   });
 });

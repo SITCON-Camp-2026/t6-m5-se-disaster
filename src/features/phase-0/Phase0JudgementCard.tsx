@@ -1,4 +1,4 @@
-import { StatusBadge } from "../../components/StatusBadge";
+import { demandCategoryOptions } from "./phase0-labels";
 import type { Phase0JudgementDraft, Phase0MessyRecord } from "./phase0-types";
 
 const kindLabels: Record<Phase0JudgementDraft["possibleKind"], string> = {
@@ -28,67 +28,199 @@ const nextStepLabels: Record<
   do_not_use_yet: "暫時不要使用",
 };
 
+function toTextareaValue(items: string[]) {
+  return items.join("\n");
+}
+
+function toList(value: string) {
+  return value
+    .split("\n")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
 export function Phase0JudgementCard({
   judgement,
   record,
+  onChange,
+  onDelete,
 }: {
   judgement: Phase0JudgementDraft;
   record: Phase0MessyRecord;
+  onChange: (nextDraft: Phase0JudgementDraft) => void;
+  onDelete: () => void;
 }) {
+  function update(patch: Partial<Phase0JudgementDraft>) {
+    onChange({ ...judgement, ...patch });
+  }
+
   return (
-    <article className="judgement-card">
+    <form
+      className="judgement-card"
+      onSubmit={(event) => event.preventDefault()}
+    >
       <div className="judgement-card__header">
         <div>
-          <p className="eyebrow">Starter 安全預設</p>
-          <h3>尚未建立整理草稿</h3>
+          <p className="eyebrow">整理草稿</p>
+          <h3>{record.id} 的候選判斷</h3>
+          <span className={`demand-badge demand-${judgement.demandCategory}`}>
+            {
+              demandCategoryOptions.find(
+                (option) => option.value === judgement.demandCategory,
+              )?.label
+            }
+          </span>
         </div>
-        <StatusBadge status={record.verificationStatus} />
+        <button
+          className="button button--danger"
+          type="button"
+          onClick={onDelete}
+        >
+          刪除草稿
+        </button>
       </div>
 
       <p>
-        這張卡只保留保守的安全邊界，不是 agent 對這筆資料的整理答案。請讓 coding
-        agent 實作可建立、編輯與刪除的整理草稿。
+        這份草稿只是一個候選整理，不能取代人工確認，也不能把原始資訊變成已確認事實。
       </p>
 
-      <dl className="judgement-summary">
-        <div>
-          <dt>候選類型</dt>
-          <dd>{kindLabels[judgement.possibleKind]}</dd>
-        </div>
-        <div>
-          <dt>信心程度</dt>
-          <dd>{confidenceLabels[judgement.confidence]}</dd>
-        </div>
-        <div>
-          <dt>下一步</dt>
-          <dd>{nextStepLabels[judgement.suggestedNextStep]}</dd>
-        </div>
-      </dl>
+      <div className="draft-form__grid">
+        <label>
+          需求分類
+          <select
+            value={judgement.demandCategory}
+            onChange={(event) =>
+              update({
+                demandCategory: event.target
+                  .value as Phase0JudgementDraft["demandCategory"],
+              })
+            }
+          >
+            {demandCategoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <p>
-        能否直接行動：
-        <strong>
-          {judgement.unsafeToActDirectly ? "不可直接行動" : "仍需確認情境"}
-        </strong>
-      </p>
+        <label>
+          候選類型
+          <select
+            value={judgement.possibleKind}
+            onChange={(event) =>
+              update({
+                possibleKind: event.target
+                  .value as Phase0JudgementDraft["possibleKind"],
+              })
+            }
+          >
+            {Object.entries(kindLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <section>
-        <h4>目前只有安全預設</h4>
-        <ul>
-          {judgement.evidence.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
+        <label>
+          信心程度
+          <select
+            value={judgement.confidence}
+            onChange={(event) =>
+              update({
+                confidence: event.target
+                  .value as Phase0JudgementDraft["confidence"],
+              })
+            }
+          >
+            {Object.entries(confidenceLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
 
-      <section>
-        <h4>目前卡住的地方</h4>
-        <ul>
-          {judgement.blockers.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </section>
-    </article>
+        <label>
+          下一步
+          <select
+            value={judgement.suggestedNextStep}
+            onChange={(event) =>
+              update({
+                suggestedNextStep: event.target
+                  .value as Phase0JudgementDraft["suggestedNextStep"],
+              })
+            }
+          >
+            {Object.entries(nextStepLabels).map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
+
+      <label>
+        原文依據
+        <textarea
+          rows={4}
+          value={toTextareaValue(judgement.evidence)}
+          onChange={(event) => update({ evidence: toList(event.target.value) })}
+        />
+      </label>
+
+      <label>
+        不能直接變成任務的原因
+        <textarea
+          rows={4}
+          value={toTextareaValue(judgement.blockers)}
+          onChange={(event) => update({ blockers: toList(event.target.value) })}
+        />
+      </label>
+
+      <label>
+        人工確認備註
+        <textarea
+          rows={3}
+          value={judgement.humanReviewNote ?? ""}
+          onChange={(event) => update({ humanReviewNote: event.target.value })}
+        />
+      </label>
+
+      <div className="draft-form__checks">
+        <label>
+          <input
+            type="checkbox"
+            checked={judgement.unsafeToActDirectly}
+            onChange={(event) =>
+              update({ unsafeToActDirectly: event.target.checked })
+            }
+          />
+          不能直接變成志工任務
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={judgement.needsHumanReview ?? false}
+            onChange={(event) =>
+              update({ needsHumanReview: event.target.checked })
+            }
+          />
+          需要人工確認
+        </label>
+        <label>
+          <input
+            type="checkbox"
+            checked={judgement.agentJudgementQuestioned ?? false}
+            onChange={(event) =>
+              update({ agentJudgementQuestioned: event.target.checked })
+            }
+          />
+          人類質疑或修正 agent 判斷
+        </label>
+      </div>
+    </form>
   );
 }

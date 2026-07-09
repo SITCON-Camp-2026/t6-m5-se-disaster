@@ -9,6 +9,14 @@ export type Phase0PossibleKind =
 
 export type Phase0Confidence = "low" | "medium" | "high";
 
+export type Phase0DemandCategory =
+  | "people"
+  | "supplies"
+  | "professional_support"
+  | "site_status"
+  | "announcement"
+  | "unknown";
+
 export type Phase0SuggestedNextStep =
   | "keep_raw"
   | "ask_for_more_info"
@@ -28,10 +36,13 @@ export type Phase0MessyRecord = {
 export type Phase0JudgementDraft = {
   messyRecordId: string;
   possibleKind: Phase0PossibleKind;
+  demandCategory: Phase0DemandCategory;
   confidence: Phase0Confidence;
   evidence: string[];
   blockers: string[];
   suggestedNextStep: Phase0SuggestedNextStep;
   unsafeToActDirectly: boolean;
+  needsHumanReview?: boolean;
+  agentJudgementQuestioned?: boolean;
   humanReviewNote?: string;
 };

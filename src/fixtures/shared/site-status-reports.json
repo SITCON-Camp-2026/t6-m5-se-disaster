@@ -9,5 +9,49 @@
     "suggestedStatus": "needs_review",
     "message": "現場志工回報不確定是否還收新物資。",
     "reportedByRole": "field_volunteer"
+  },
+  {
+    "id": "SSR-002",
+    "createdAt": "2026-07-20T06:40:00Z",
+    "updatedAt": "2026-07-20T06:40:00Z",
+    "sourceType": "volunteer_update",
+    "verificationStatus": "needs_review",
+    "siteId": "S-003",
+    "suggestedStatus": "needs_review",
+    "message": "活動中心物資盤點時間已超過三小時，需要再確認是否仍缺手套與頭燈。",
+    "reportedByRole": "supply_volunteer"
+  },
+  {
+    "id": "SSR-003",
+    "createdAt": "2026-07-20T07:25:00Z",
+    "updatedAt": "2026-07-20T07:25:00Z",
+    "sourceType": "field_report",
+    "verificationStatus": "needs_review",
+    "siteId": "S-004",
+    "suggestedStatus": "reported_open",
+    "message": "服務台仍有人排隊登記，但是否接新案需要值守確認。",
+    "reportedByRole": "field_volunteer"
+  },
+  {
+    "id": "SSR-004",
+    "createdAt": "2026-07-20T07:50:00Z",
+    "updatedAt": "2026-07-20T07:50:00Z",
+    "sourceType": "social_post",
+    "verificationStatus": "unverified",
+    "siteId": "S-005",
+    "suggestedStatus": "unknown",
+    "message": "充電站資訊可能是昨天的貼文，尚未確認今天是否開放。",
+    "reportedByRole": "remote_volunteer"
+  },
+  {
+    "id": "SSR-005",
+    "createdAt": "2026-07-20T08:12:00Z",
+    "updatedAt": "2026-07-20T08:12:00Z",
+    "sourceType": "official_notice",
+    "verificationStatus": "needs_review",
+    "siteId": "S-006",
+    "suggestedStatus": "needs_review",
+    "message": "接駁點截圖缺少完整發布時間，需要確認是否為最新公告。",
+    "reportedByRole": "organizer"
   }
 ]

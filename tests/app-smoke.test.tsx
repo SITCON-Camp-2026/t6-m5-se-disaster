@@ -2,6 +2,29 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { App } from "../src/app/App";
 
+function loginWithCaptcha({
+  name,
+  roleLabel,
+}: {
+  name?: string;
+  roleLabel?: "回報與行動者" | "資訊整理者";
+} = {}) {
+  if (name) {
+    fireEvent.change(screen.getByLabelText("名稱"), {
+      target: { value: name },
+    });
+  }
+
+  if (roleLabel) {
+    fireEvent.click(screen.getByLabelText(roleLabel));
+  }
+
+  fireEvent.change(screen.getByLabelText("CAPTCHA 驗證"), {
+    target: { value: "7319" },
+  });
+  fireEvent.click(screen.getByRole("button", { name: "驗證並進入" }));
+}
+
 describe("App", () => {
   it("renders starter title", () => {
     render(<App />);
@@ -12,24 +35,41 @@ describe("App", () => {
     render(<App />);
 
     expect(
-      screen.getByRole("button", { name: "進入工作台" }),
+      screen.getByRole("button", { name: "驗證並進入" }),
     ).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("名稱"), {
       target: { value: "值班整理者" },
     });
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    expect(screen.getByText("請輸入圖中數字：7319")).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("CAPTCHA 驗證"), {
+      target: { value: "0000" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "驗證並進入" }));
+    expect(screen.getByRole("alert")).toHaveTextContent("CAPTCHA 驗證不正確");
+    fireEvent.change(screen.getByLabelText("CAPTCHA 驗證"), {
+      target: { value: "7319" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "驗證並進入" }));
 
-    expect(screen.getByText("值班整理者")).toBeInTheDocument();
+    expect(screen.getAllByText("值班整理者").length).toBeGreaterThan(0);
     expect(screen.getByText("資訊整理者")).toBeInTheDocument();
     expect(screen.getByText("資訊整理者畫面")).toBeInTheDocument();
+    expect(screen.getByText("資料流與操作紀錄")).toBeInTheDocument();
+    expect(screen.getByText("in-memory demo API")).toBeInTheDocument();
+    expect(screen.getByText("優先處理佇列")).toBeInTheDocument();
+    expect(
+      screen.getAllByText(/地點不足|隱私與公開限制/).length,
+    ).toBeGreaterThan(0);
+    fireEvent.click(screen.getAllByRole("button", { name: "標記已處理" })[0]);
+    expect(screen.getByText("已處理")).toBeInTheDocument();
+    expect(screen.getByText(/標記 .* 的.*已處理/)).toBeInTheDocument();
   });
 
   it("shows a combined reporter and actor screen", () => {
     render(<App />);
 
-    fireEvent.click(screen.getByLabelText("回報與行動者"));
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha({ roleLabel: "回報與行動者" });
 
     expect(screen.getByText("回報與行動畫面")).toBeInTheDocument();
     expect(screen.getByText("先留下線索，也先避免誤行動")).toBeInTheDocument();
@@ -52,11 +92,7 @@ describe("App", () => {
   it("lets action users accept tasks and shows organizer leaderboard", () => {
     render(<App />);
 
-    fireEvent.change(screen.getByLabelText("名稱"), {
-      target: { value: "小明" },
-    });
-    fireEvent.click(screen.getByLabelText("回報與行動者"));
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha({ name: "小明", roleLabel: "回報與行動者" });
 
     fireEvent.click(screen.getAllByRole("button", { name: "接單" })[0]);
     expect(screen.getByText("已接單：小明")).toBeInTheDocument();
@@ -66,18 +102,20 @@ describe("App", () => {
     expect(screen.getByText("任務完成數")).toBeInTheDocument();
     expect(screen.getAllByText("小明").length).toBeGreaterThan(0);
     expect(screen.getByText("1 件")).toBeInTheDocument();
+    expect(screen.getByText("資料流與操作紀錄")).toBeInTheDocument();
+    expect(screen.getByText(/完成 demo 任務/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "登出" }));
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
 
     expect(screen.getByText("任務完成數")).toBeInTheDocument();
-    expect(screen.getByText("小明")).toBeInTheDocument();
+    expect(screen.getAllByText("小明").length).toBeGreaterThan(0);
     expect(screen.getByText("1 件")).toBeInTheDocument();
   });
 
   it("keeps the home page focused on phase 0 tabs", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
 
     expect(
       screen.getByRole("button", { name: "整理總覽" }),
@@ -104,7 +142,7 @@ describe("App", () => {
 
   it("shows review states in the phase 0 workbench", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
 
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
@@ -119,7 +157,7 @@ describe("App", () => {
 
   it("lets learners edit, delete, create, and reset phase 0 drafts", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
 
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
@@ -127,6 +165,18 @@ describe("App", () => {
     expect(screen.getAllByText(/預填 API/).length).toBeGreaterThan(0);
     expect(screen.getByText("分類總覽")).toBeInTheDocument();
     expect(screen.getByText("可行動狀態")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /分類總覽/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(
+      screen.getByRole("button", { name: /需求分類篩選/ }),
+    ).toHaveAttribute("aria-expanded", "false");
+    expect(screen.getByRole("button", { name: /可行動狀態/ })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    fireEvent.click(screen.getByRole("button", { name: /需求分類篩選/ }));
     const suppliesFilter = screen.getAllByRole("button", {
       name: /物資需求/,
     })[0];
@@ -152,30 +202,44 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "建立這筆草稿" }));
     expect(screen.getByText("M-003 的候選判斷")).toBeInTheDocument();
 
-    fireEvent.click(
-      screen.getByRole("button", { name: "重新呼叫預填 API" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "重新呼叫預填 API" }));
     expect(await screen.findByText("M-001 的候選判斷")).toBeInTheDocument();
   });
 
   it("collapses the category overview", async () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
     expect(await screen.findByText("整理草稿")).toBeInTheDocument();
     const categoryToggle = screen.getByRole("button", {
       name: /分類總覽/,
     });
-    expect(categoryToggle).toHaveAttribute("aria-expanded", "true");
+    expect(categoryToggle).toHaveAttribute("aria-expanded", "false");
 
     fireEvent.click(categoryToggle);
-    expect(categoryToggle).toHaveAttribute("aria-expanded", "false");
+    expect(categoryToggle).toHaveAttribute("aria-expanded", "true");
+
+    const demandToggle = screen.getByRole("button", {
+      name: /需求分類篩選/,
+    });
+    expect(demandToggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(demandToggle);
+    expect(demandToggle).toHaveAttribute("aria-expanded", "true");
+
+    const actionabilityToggle = screen.getByRole("button", {
+      name: /可行動狀態/,
+    });
+    expect(actionabilityToggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(actionabilityToggle);
+    expect(actionabilityToggle).toHaveAttribute("aria-expanded", "true");
   });
 
-  it("lets users add raw info, comment, and like", () => {
+  it("lets users add raw info and comment", () => {
     render(<App />);
-    fireEvent.click(screen.getByRole("button", { name: "進入工作台" }));
+    loginWithCaptcha();
     fireEvent.click(screen.getByRole("button", { name: "原始資訊" }));
 
     fireEvent.change(screen.getByLabelText("新增未確認資訊"), {
@@ -187,9 +251,9 @@ describe("App", () => {
     fireEvent.click(screen.getByRole("button", { name: "新增資訊" }));
 
     expect(screen.getByText(/新收到一則轉述/)).toBeInTheDocument();
-    const likeButtons = screen.getAllByRole("button", { name: /愛心/ });
-    fireEvent.click(likeButtons[0]);
-    expect(screen.getByRole("button", { name: "愛心 1" })).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /愛心/ }),
+    ).not.toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("U-001 留言"), {
       target: { value: "請先確認是否仍缺水" },

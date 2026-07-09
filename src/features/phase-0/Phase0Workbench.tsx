@@ -42,10 +42,13 @@ export function Phase0Workbench({
   const [demandFilter, setDemandFilter] = useState<DemandFilter>("all");
   const [actionabilityFilter, setActionabilityFilter] =
     useState<ActionabilityFilter>("all");
-  const [isCategoryOpen, setIsCategoryOpen] = useState(true);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isDemandFilterOpen, setIsDemandFilterOpen] = useState(false);
+  const [isActionabilityFilterOpen, setIsActionabilityFilterOpen] =
+    useState(false);
   const [prefillStatus, setPrefillStatus] = useState<
     "idle" | "loading" | "ready" | "error"
-  >("idle");
+  >("loading");
   const [prefillGeneratedAt, setPrefillGeneratedAt] = useState<string | null>(
     null,
   );
@@ -116,7 +119,6 @@ export function Phase0Workbench({
   useEffect(() => {
     let isMounted = true;
 
-    setPrefillStatus("loading");
     requestPhase0Prefill(records)
       .then((response) => {
         if (!isMounted) return;
@@ -183,7 +185,8 @@ export function Phase0Workbench({
             第一階段的成功不是分類正確，而是把為什麼現在還不能判斷說清楚。
           </h2>
           <p>
-            這裡透過預填 API 產生可編輯分類草稿；這不是已確認資料，也不是正式資料模型。每一筆仍需要人類確認。
+            這裡透過預填 API
+            產生可編輯分類草稿；這不是已確認資料，也不是正式資料模型。每一筆仍需要人類確認。
           </p>
           <p className={`api-status api-status--${prefillStatus}`}>
             {prefillStatus === "loading"
@@ -234,66 +237,92 @@ export function Phase0Workbench({
           </div>
 
           <div className="filter-panel">
-            <h3>需求分類篩選</h3>
             <button
-              className={demandFilter === "all" ? "active" : ""}
+              aria-expanded={isDemandFilterOpen}
+              className="filter-panel__toggle"
               type="button"
-              onClick={() => setDemandFilter("all")}
+              onClick={() => setIsDemandFilterOpen((current) => !current)}
             >
-              全部
-              <span>{Object.keys(draftsByRecordId).length} 筆</span>
+              <span>需求分類篩選</span>
+              <strong>{isDemandFilterOpen ? "收合" : "展開"}</strong>
             </button>
-            {demandCategoryOptions.map((option) => (
-              <button
-                className={demandFilter === option.value ? "active" : ""}
-                key={option.value}
-                type="button"
-                onClick={() => setDemandFilter(option.value)}
-              >
-                <span
-                  className={`demand-dot demand-${option.value}`}
-                  aria-hidden="true"
-                />
-                {option.label}
-                <span>{categoryCounts[option.value] ?? 0} 筆</span>
-              </button>
-            ))}
+            {isDemandFilterOpen ? (
+              <>
+                <button
+                  className={demandFilter === "all" ? "active" : ""}
+                  type="button"
+                  onClick={() => setDemandFilter("all")}
+                >
+                  全部
+                  <span>{Object.keys(draftsByRecordId).length} 筆</span>
+                </button>
+                {demandCategoryOptions.map((option) => (
+                  <button
+                    className={demandFilter === option.value ? "active" : ""}
+                    key={option.value}
+                    type="button"
+                    onClick={() => setDemandFilter(option.value)}
+                  >
+                    <span
+                      className={`demand-dot demand-${option.value}`}
+                      aria-hidden="true"
+                    />
+                    {option.label}
+                    <span>{categoryCounts[option.value] ?? 0} 筆</span>
+                  </button>
+                ))}
+              </>
+            ) : null}
           </div>
 
           <div className="filter-panel">
-            <h3>可行動狀態</h3>
             <button
-              className={actionabilityFilter === "all" ? "active" : ""}
+              aria-expanded={isActionabilityFilterOpen}
+              className="filter-panel__toggle"
               type="button"
-              onClick={() => setActionabilityFilter("all")}
+              onClick={() =>
+                setIsActionabilityFilterOpen((current) => !current)
+              }
             >
-              全部
-              <span>{Object.keys(draftsByRecordId).length} 筆</span>
+              <span>可行動狀態</span>
+              <strong>{isActionabilityFilterOpen ? "收合" : "展開"}</strong>
             </button>
-            <button
-              className={actionabilityFilter === "blocked" ? "active" : ""}
-              type="button"
-              onClick={() => setActionabilityFilter("blocked")}
-            >
-              不能直接行動
-              <span>{actionabilityCounts.blocked} 筆</span>
-            </button>
-            <button
-              className={actionabilityFilter === "review" ? "active" : ""}
-              type="button"
-              onClick={() => setActionabilityFilter("review")}
-            >
-              待人工確認
-              <span>{actionabilityCounts.review} 筆</span>
-            </button>
-            <button
-              className={actionabilityFilter === "ready" ? "active" : ""}
-              type="button"
-              onClick={() => setActionabilityFilter("ready")}
-            >
-              可進一步整理
-              <span>{actionabilityCounts.ready} 筆</span>
-            </button>
+            {isActionabilityFilterOpen ? (
+              <>
+                <button
+                  className={actionabilityFilter === "all" ? "active" : ""}
+                  type="button"
+                  onClick={() => setActionabilityFilter("all")}
+                >
+                  全部
+                  <span>{Object.keys(draftsByRecordId).length} 筆</span>
+                </button>
+                <button
+                  className={actionabilityFilter === "blocked" ? "active" : ""}
+                  type="button"
+                  onClick={() => setActionabilityFilter("blocked")}
+                >
+                  不能直接行動
+                  <span>{actionabilityCounts.blocked} 筆</span>
+                </button>
+                <button
+                  className={actionabilityFilter === "review" ? "active" : ""}
+                  type="button"
+                  onClick={() => setActionabilityFilter("review")}
+                >
+                  待人工確認
+                  <span>{actionabilityCounts.review} 筆</span>
+                </button>
+                <button
+                  className={actionabilityFilter === "ready" ? "active" : ""}
+                  type="button"
+                  onClick={() => setActionabilityFilter("ready")}
+                >
+                  可進一步整理
+                  <span>{actionabilityCounts.ready} 筆</span>
+                </button>
+              </>
+            ) : null}
           </div>
 
           {visibleRecords.map((record) => (

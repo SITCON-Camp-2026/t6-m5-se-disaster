@@ -82,5 +82,89 @@
     "sourceType": "phone_call",
     "verificationStatus": "needs_review",
     "updatedAt": "2026-07-20T15:05:00+08:00"
+  },
+  {
+    "id": "M-013",
+    "rawText": "15:20 有志工說大進路口服務台目前排隊登記水電檢修的人很多，但不知道服務台是否還收新案，現場叫大家先不要把住址貼到公開群組。",
+    "sourceType": "volunteer_update",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T15:20:00+08:00"
+  },
+  {
+    "id": "M-014",
+    "rawText": "社群轉貼一張表格，寫著今晚 19:00 後光復國中側門開放臨時充電站；留言有人說那是昨天的資訊，今天學校周邊還在清理。",
+    "sourceType": "social_post",
+    "verificationStatus": "unverified",
+    "updatedAt": "2026-07-20T15:34:00+08:00"
+  },
+  {
+    "id": "M-015",
+    "rawText": "現場醫護志工回報：老街附近有幾位長者需要慢性病藥物協助，但目前只有姓氏和大概門牌區段，不能公開完整個資，也不確定是否已由衛生所接手。",
+    "sourceType": "field_report",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T15:48:00+08:00"
+  },
+  {
+    "id": "M-016",
+    "rawText": "群組有人說河堤旁還缺 20 個沙包，另一位志工回覆那邊水位已退但路面濕滑，不建議一般志工前往。",
+    "sourceType": "social_post",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T16:02:00+08:00"
+  },
+  {
+    "id": "M-017",
+    "rawText": "物資盤點志工表示溪畔活動中心缺成人手套與頭燈，飲用水仍足夠；但盤點時間是 13:00，現在是否仍有效需要再問值守人員。",
+    "sourceType": "volunteer_update",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T16:16:00+08:00"
+  },
+  {
+    "id": "M-018",
+    "rawText": "電話通報者說親友家的瓦斯桶倒了，位置只說在市場後面巷子，通報者不在現場。這可能需要專業人員，但目前無法確認是否有立即危險。",
+    "sourceType": "phone_call",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T16:28:00+08:00"
+  },
+  {
+    "id": "M-019",
+    "rawText": "官方粉專公告截圖顯示晚間志工接駁車改到南側出口搭乘，但截圖沒有連結，發布時間被裁掉，需要確認是否為最新公告。",
+    "sourceType": "official_notice",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T16:41:00+08:00"
+  },
+  {
+    "id": "M-020",
+    "rawText": "現場志工回報：A 區清淤人力暫時足夠，B 區需要 4 到 6 人搬運家具，但 B 區入口道路狹窄，只能由熟悉現場的人帶路。",
+    "sourceType": "field_report",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T16:55:00+08:00"
+  },
+  {
+    "id": "M-021",
+    "rawText": "有人在聊天室問能不能捐二手棉被到大進臨時物資站；一位志工說目前暫停收二手寢具，但還沒有看到物資站正式公告。",
+    "sourceType": "social_post",
+    "verificationStatus": "unverified",
+    "updatedAt": "2026-07-20T17:08:00+08:00"
+  },
+  {
+    "id": "M-022",
+    "rawText": "水電師傅群組回覆可支援 2 組人到光復，但需要明確地址與屋主同意；目前只有『老街後段靠溪邊』這種描述。",
+    "sourceType": "volunteer_update",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T17:22:00+08:00"
+  },
+  {
+    "id": "M-023",
+    "rawText": "現場回報溪畔活動中心廁所水壓不穩，可能需要維修或改引導志工到另一個集合點，但不確定是臨時狀況還是整天都這樣。",
+    "sourceType": "field_report",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T17:36:00+08:00"
+  },
+  {
+    "id": "M-024",
+    "rawText": "有居民表示不希望住址被公開，只願意透過里長轉介需求。需求大概是清理一樓泥水和搬出損壞家具，但還沒有里長確認。",
+    "sourceType": "phone_call",
+    "verificationStatus": "needs_review",
+    "updatedAt": "2026-07-20T17:50:00+08:00"
   }
 ]

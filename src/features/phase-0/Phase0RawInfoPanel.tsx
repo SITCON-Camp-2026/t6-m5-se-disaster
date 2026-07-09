@@ -5,27 +5,21 @@ import { formatDateTime } from "../../lib/date";
 import type { Phase0MessyRecord } from "./phase0-types";
 
 export type RecordInteraction = {
-  liked: boolean;
-  likeCount: number;
   comments: string[];
 };
 
 export function Phase0RawInfoPanel({
   records,
-  selectedRecordId,
-  onSelect,
   interactions = {},
   onCreateRecord,
-  onToggleLike,
   onAddComment,
+  compact = false,
 }: {
   records: Phase0MessyRecord[];
-  selectedRecordId: string;
-  onSelect: (recordId: string) => void;
   interactions: Record<string, RecordInteraction>;
   onCreateRecord: (rawText: string, locationText: string) => void;
-  onToggleLike: (recordId: string) => void;
   onAddComment: (recordId: string, comment: string) => void;
+  compact?: boolean;
 }) {
   const [rawText, setRawText] = useState("");
   const [locationText, setLocationText] = useState("");
@@ -52,7 +46,7 @@ export function Phase0RawInfoPanel({
   }
 
   return (
-    <div className="phase0-raw">
+    <div className={compact ? "phase0-raw phase0-raw--compact" : "phase0-raw"}>
       <div className="panel__header">
         <div>
           <h2>原始資訊</h2>
@@ -86,19 +80,14 @@ export function Phase0RawInfoPanel({
         </div>
       </form>
 
-      <div className="grid">
+      <div className={compact ? "grid raw-grid--compact" : "grid"}>
         {records.map((record) => {
           const interaction = interactions[record.id] ?? {
-            liked: false,
-            likeCount: 0,
             comments: [],
           };
 
           return (
-            <article
-              className={`record-card ${record.id === selectedRecordId ? "record-card--selected" : ""}`}
-              key={record.id}
-            >
+            <article className="record-card" key={record.id}>
               <div className="record-card__header">
                 <h3>{record.id}</h3>
                 <StatusBadge status={record.verificationStatus} />
@@ -107,18 +96,6 @@ export function Phase0RawInfoPanel({
               <div className="record-card__meta">
                 <SourceLabel sourceType={record.sourceType} />
                 <span>更新：{formatDateTime(record.updatedAt)}</span>
-              </div>
-              <div className="record-card__actions">
-                <button type="button" onClick={() => onSelect(record.id)}>
-                  送到整理工作台
-                </button>
-                <button
-                  className={interaction.liked ? "liked" : ""}
-                  type="button"
-                  onClick={() => onToggleLike(record.id)}
-                >
-                  愛心 {interaction.likeCount}
-                </button>
               </div>
               <div className="comments">
                 <h4>留言</h4>
@@ -143,7 +120,10 @@ export function Phase0RawInfoPanel({
                       }))
                     }
                   />
-                  <button type="button" onClick={() => submitComment(record.id)}>
+                  <button
+                    type="button"
+                    onClick={() => submitComment(record.id)}
+                  >
                     留言
                   </button>
                 </div>

@@ -1,27 +1,28 @@
 import { useState } from "react";
-import messyReports from "../fixtures/phase-0/messy-reports.json";
+import {
+  BackendAuthorizationError,
+  type AuditEvent,
+  type BackendIssue,
+  type BackendSnapshot,
+  type BackendSummary,
+  type CaptchaChallenge,
+  type TaskAssignment,
+  createDemoBackend,
+} from "../backend/demo-backend";
 import { EmptyState } from "../components/EmptyState";
+import { LoginPanel } from "../components/LoginPanel";
 import {
   labelForUserRole,
-  LoginPanel,
   type SessionUser,
-} from "../components/LoginPanel";
-import {
-  Phase0RawInfoPanel,
-  type RecordInteraction,
-} from "../features/phase-0/Phase0RawInfoPanel";
+  type UserRole,
+} from "../components/user-role";
+import { Phase0RawInfoPanel } from "../features/phase-0/Phase0RawInfoPanel";
 import { Phase0Workbench } from "../features/phase-0/Phase0Workbench";
 import { createPhase0AgentDraft } from "../features/phase-0/phase0-heuristics";
 import type { Phase0MessyRecord } from "../features/phase-0/phase0-types";
 
 type TabKey = "role" | "raw" | "workbench";
-type TaskStatus = "accepted" | "completed";
-type TaskAssignment = {
-  assignee: string;
-  status: TaskStatus;
-};
-
-const phase0Records = messyReports satisfies Phase0MessyRecord[];
+type QualityIssueFilter = "open" | "high" | "reviewed" | "all";
 
 function tabsForRole(role: SessionUser["role"]): Array<{
   key: TabKey;
@@ -42,121 +43,98 @@ function tabsForRole(role: SessionUser["role"]): Array<{
 }
 
 export function App() {
+  const [backend] = useState(() => createDemoBackend());
+  const [backendSnapshot, setBackendSnapshot] = useState<BackendSnapshot>(() =>
+    backend.getSnapshot(),
+  );
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
-  const [records, setRecords] = useState<Phase0MessyRecord[]>(phase0Records);
-  const [taskAssignments, setTaskAssignments] = useState<
-    Record<string, TaskAssignment>
-  >({});
-  const [interactions, setInteractions] = useState<
-    Record<string, RecordInteraction>
-  >({});
+  const [notice, setNotice] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("role");
-  const [selectedRecordId, setSelectedRecordId] = useState(records[0]?.id ?? "");
+  const [selectedRecordId, setSelectedRecordId] = useState(
+    backendSnapshot.records[0]?.id ?? "",
+  );
+  const {
+    auditEvents,
+    interactions,
+    qualityIssues,
+    records,
+    summary,
+    taskAssignments,
+  } = backendSnapshot;
 
-  function selectForWorkbench(recordId: string) {
-    setSelectedRecordId(recordId);
-    setActiveTab("workbench");
+  function requestCaptchaChallenge(): CaptchaChallenge {
+    return backend.requestCaptchaChallenge();
   }
 
-  function login(user: SessionUser) {
+  function login(input: {
+    name: string;
+    role: UserRole;
+    captchaId: string;
+    captchaAnswer: string;
+  }) {
+    const user = backend.login(input);
     setSessionUser(user);
+    setNotice("");
     setActiveTab("role");
+    setBackendSnapshot(backend.getSnapshot());
+    return user;
   }
 
   function logout() {
     setSessionUser(null);
     setActiveTab("role");
+    setNotice("");
   }
 
   function createRecord(rawText: string, locationText: string) {
-    const nextIndex =
-      records.filter((record) => record.id.startsWith("U-")).length + 1;
-    const locationPrefix = locationText.trim()
-      ? `地點：${locationText.trim()}。`
-      : "";
-    const nextRecord: Phase0MessyRecord = {
-      id: `U-${String(nextIndex).padStart(3, "0")}`,
-      rawText: `${locationPrefix}${rawText.trim()}`,
-      sourceType: "volunteer_update",
-      verificationStatus: "needs_review",
-      updatedAt: new Date().toISOString(),
-    };
-
-    setRecords((currentRecords) => [nextRecord, ...currentRecords]);
-    setSelectedRecordId(nextRecord.id);
-    setInteractions((currentInteractions) => ({
-      ...currentInteractions,
-      [nextRecord.id]: {
-        liked: false,
-        likeCount: 0,
-        comments: [],
-      },
-    }));
-  }
-
-  function toggleLike(recordId: string) {
-    setInteractions((currentInteractions) => {
-      const current = currentInteractions[recordId] ?? {
-        liked: false,
-        likeCount: 0,
-        comments: [],
-      };
-
-      return {
-        ...currentInteractions,
-        [recordId]: {
-          ...current,
-          liked: !current.liked,
-          likeCount: current.liked
-            ? Math.max(0, current.likeCount - 1)
-            : current.likeCount + 1,
-        },
-      };
-    });
+    const nextSnapshot = backend.createRecord(
+      rawText,
+      locationText,
+      sessionUser?.name,
+    );
+    setBackendSnapshot(nextSnapshot);
+    setSelectedRecordId(nextSnapshot.records[0]?.id ?? "");
   }
 
   function addComment(recordId: string, comment: string) {
-    setInteractions((currentInteractions) => {
-      const current = currentInteractions[recordId] ?? {
-        liked: false,
-        likeCount: 0,
-        comments: [],
-      };
-
-      return {
-        ...currentInteractions,
-        [recordId]: {
-          ...current,
-          comments: [...current.comments, comment],
-        },
-      };
-    });
+    setBackendSnapshot(
+      backend.addComment(recordId, comment, sessionUser?.name),
+    );
   }
 
   function acceptTask(recordId: string) {
     if (!sessionUser) return;
-    setTaskAssignments((currentAssignments) => ({
-      ...currentAssignments,
-      [recordId]: {
-        assignee: sessionUser.name,
-        status: "accepted",
-      },
-    }));
+    setBackendSnapshot(backend.acceptTask(recordId, sessionUser.name));
   }
 
   function completeTask(recordId: string) {
     if (!sessionUser) return;
-    setTaskAssignments((currentAssignments) => ({
-      ...currentAssignments,
-      [recordId]: {
-        assignee: currentAssignments[recordId]?.assignee ?? sessionUser.name,
-        status: "completed",
-      },
-    }));
+    setBackendSnapshot(backend.completeTask(recordId, sessionUser.name));
+  }
+
+  function reviewQualityIssue(issueId: string) {
+    if (!sessionUser) return;
+    try {
+      setBackendSnapshot(backend.reviewQualityIssue(issueId, sessionUser));
+      setNotice("");
+    } catch (error) {
+      if (error instanceof BackendAuthorizationError) {
+        setBackendSnapshot(backend.getSnapshot());
+        setNotice(error.message);
+        return;
+      }
+
+      throw error;
+    }
   }
 
   if (!sessionUser) {
-    return <LoginPanel onLogin={login} />;
+    return (
+      <LoginPanel
+        onRequestCaptchaChallenge={requestCaptchaChallenge}
+        onLogin={login}
+      />
+    );
   }
 
   const tabs = tabsForRole(sessionUser.role);
@@ -195,28 +173,35 @@ export function App() {
       </nav>
 
       <section className="panel">
+        {notice ? (
+          <p className="app-notice" role="status">
+            {notice}
+          </p>
+        ) : null}
         {records.length === 0 ? (
           <EmptyState message="目前沒有資料" />
         ) : activeTab === "role" ? (
           <RoleScreen
             role={sessionUser.role}
             records={records}
+            summary={summary}
+            auditEvents={auditEvents}
+            qualityIssues={qualityIssues}
             taskAssignments={taskAssignments}
             onCreateRecord={createRecord}
             onAcceptTask={acceptTask}
             onCompleteTask={completeTask}
+            onReviewQualityIssue={reviewQualityIssue}
             onOpenRaw={() => setActiveTab("raw")}
             onOpenWorkbench={() => setActiveTab("workbench")}
           />
         ) : activeTab === "raw" ? (
           <Phase0RawInfoPanel
             records={records}
-            selectedRecordId={selectedRecordId}
-            onSelect={selectForWorkbench}
             interactions={interactions}
             onCreateRecord={createRecord}
-            onToggleLike={toggleLike}
             onAddComment={addComment}
+            compact={sessionUser.role === "organizer"}
           />
         ) : (
           <Phase0Workbench
@@ -233,19 +218,27 @@ export function App() {
 function RoleScreen({
   role,
   records,
+  summary,
+  auditEvents,
+  qualityIssues,
   taskAssignments,
   onCreateRecord,
   onAcceptTask,
   onCompleteTask,
+  onReviewQualityIssue,
   onOpenRaw,
   onOpenWorkbench,
 }: {
   role: SessionUser["role"];
   records: Phase0MessyRecord[];
+  summary: BackendSummary;
+  auditEvents: AuditEvent[];
+  qualityIssues: BackendIssue[];
   taskAssignments: Record<string, TaskAssignment>;
   onCreateRecord: (rawText: string, locationText: string) => void;
   onAcceptTask: (recordId: string) => void;
   onCompleteTask: (recordId: string) => void;
+  onReviewQualityIssue: (issueId: string) => void;
   onOpenRaw: () => void;
   onOpenWorkbench: () => void;
 }) {
@@ -266,11 +259,15 @@ function RoleScreen({
         <div className="safety-grid">
           <div className="summary-tile summary-tile--warning">
             <span>暫勿直接行動</span>
-            <strong>{drafts.filter((draft) => draft.unsafeToActDirectly).length}</strong>
+            <strong>
+              {drafts.filter((draft) => draft.unsafeToActDirectly).length}
+            </strong>
           </div>
           <div className="summary-tile">
             <span>待人工確認</span>
-            <strong>{drafts.filter((draft) => draft.needsHumanReview).length}</strong>
+            <strong>
+              {drafts.filter((draft) => draft.needsHumanReview).length}
+            </strong>
           </div>
           <div className="summary-tile">
             <span>可直接出發</span>
@@ -334,6 +331,11 @@ function RoleScreen({
           onAcceptTask={onAcceptTask}
           onCompleteTask={onCompleteTask}
         />
+        <BackendStatusPanel
+          auditEvents={auditEvents}
+          summary={summary}
+          variant="compact"
+        />
         <Leaderboard taskAssignments={taskAssignments} />
       </div>
     );
@@ -348,7 +350,11 @@ function RoleScreen({
           <p className="eyebrow">資訊整理者畫面</p>
           <h2>分類、缺口與人工確認總覽</h2>
         </div>
-        <button className="button button--primary" type="button" onClick={onOpenWorkbench}>
+        <button
+          className="button button--primary"
+          type="button"
+          onClick={onOpenWorkbench}
+        >
           進入整理工作台
         </button>
       </div>
@@ -359,14 +365,23 @@ function RoleScreen({
         </div>
         <div className="summary-tile summary-tile--warning">
           <span>不能直接行動</span>
-          <strong>{drafts.filter((draft) => draft.unsafeToActDirectly).length}</strong>
+          <strong>
+            {drafts.filter((draft) => draft.unsafeToActDirectly).length}
+          </strong>
         </div>
         <div className="summary-tile">
           <span>待人工確認</span>
-          <strong>{drafts.filter((draft) => draft.needsHumanReview).length}</strong>
+          <strong>
+            {drafts.filter((draft) => draft.needsHumanReview).length}
+          </strong>
         </div>
       </div>
       <Leaderboard taskAssignments={taskAssignments} />
+      <DataQualityQueue
+        issues={qualityIssues}
+        onReviewIssue={onReviewQualityIssue}
+      />
+      <BackendStatusPanel auditEvents={auditEvents} summary={summary} />
       <div className="role-actions">
         <button className="button" type="button" onClick={onOpenRaw}>
           檢視原始資訊
@@ -376,6 +391,154 @@ function RoleScreen({
         </button>
       </div>
     </div>
+  );
+}
+
+function DataQualityQueue({
+  issues,
+  onReviewIssue,
+}: {
+  issues: BackendIssue[];
+  onReviewIssue: (issueId: string) => void;
+}) {
+  const [filter, setFilter] = useState<QualityIssueFilter>("open");
+  const openIssueCount = issues.filter(
+    (issue) => issue.status === "open",
+  ).length;
+  const highIssueCount = issues.filter(
+    (issue) => issue.severity === "high",
+  ).length;
+  const reviewedIssueCount = issues.filter(
+    (issue) => issue.status === "reviewed",
+  ).length;
+  const filteredIssues = issues.filter((issue) => {
+    if (filter === "open") return issue.status === "open";
+    if (filter === "high") return issue.severity === "high";
+    if (filter === "reviewed") return issue.status === "reviewed";
+    return true;
+  });
+  const visibleIssues = filteredIssues.slice(0, 6);
+  const filterOptions: Array<{
+    key: QualityIssueFilter;
+    label: string;
+    count: number;
+  }> = [
+    { key: "open", label: "未處理", count: openIssueCount },
+    { key: "high", label: "高風險", count: highIssueCount },
+    { key: "reviewed", label: "已處理", count: reviewedIssueCount },
+    { key: "all", label: "全部", count: issues.length },
+  ];
+
+  return (
+    <section className="quality-queue" aria-label="資料品質佇列">
+      <div className="backend-status__header">
+        <div>
+          <p className="eyebrow">Data Quality</p>
+          <h3>優先處理佇列</h3>
+        </div>
+        <span>{openIssueCount} 個未處理</span>
+      </div>
+      <div className="quality-queue__filters" aria-label="資料品質篩選">
+        {filterOptions.map((option) => (
+          <button
+            key={option.key}
+            className={filter === option.key ? "active" : ""}
+            type="button"
+            aria-pressed={filter === option.key}
+            onClick={() => setFilter(option.key)}
+          >
+            <span>{option.label}</span>
+            <strong>{option.count}</strong>
+          </button>
+        ))}
+      </div>
+      {visibleIssues.length === 0 ? (
+        <p className="backend-status__empty">這個篩選目前沒有資料品質風險</p>
+      ) : (
+        <ol className="quality-queue__list">
+          {visibleIssues.map((issue) => (
+            <li
+              className={
+                issue.status === "reviewed"
+                  ? "quality-queue__item quality-queue__item--reviewed"
+                  : "quality-queue__item"
+              }
+              key={issue.id}
+            >
+              <span
+                className={`quality-queue__severity quality-queue__severity--${issue.severity}`}
+              >
+                {issue.severity === "high" ? "高" : "中"}
+              </span>
+              <div>
+                <strong>
+                  {issue.recordId} · {issue.label}
+                </strong>
+                <p>{issue.reason}</p>
+              </div>
+              {issue.status === "open" ? (
+                <button
+                  className="button"
+                  type="button"
+                  onClick={() => onReviewIssue(issue.id)}
+                >
+                  標記已處理
+                </button>
+              ) : (
+                <span className="quality-queue__reviewed">已處理</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
+  );
+}
+
+function BackendStatusPanel({
+  auditEvents,
+  summary,
+  variant = "full",
+}: {
+  auditEvents: AuditEvent[];
+  summary: BackendSummary;
+  variant?: "compact" | "full";
+}) {
+  const recentEvents = auditEvents.slice(0, variant === "compact" ? 3 : 6);
+
+  return (
+    <section className="backend-status" aria-label="後端狀態">
+      <div className="backend-status__header">
+        <div>
+          <p className="eyebrow">Backend</p>
+          <h3>資料流與操作紀錄</h3>
+        </div>
+        <span>in-memory demo API</span>
+      </div>
+      <div className="backend-status__metrics">
+        <span>原始資訊 {summary.totalRecords}</span>
+        <span>待確認 {summary.needsReviewRecords}</span>
+        <span>使用者新增 {summary.userSubmittedRecords}</span>
+        <span>留言 {summary.totalComments}</span>
+        <span>高風險 {summary.highPriorityIssues}</span>
+        <span>已處理風險 {summary.reviewedQualityIssues}</span>
+        <span>拒絕操作 {summary.authorizationFailures}</span>
+        <span>接單中 {summary.acceptedTasks}</span>
+        <span>已完成 {summary.completedTasks}</span>
+      </div>
+      {recentEvents.length === 0 ? (
+        <p className="backend-status__empty">尚無後端操作紀錄</p>
+      ) : (
+        <ol className="backend-status__events">
+          {recentEvents.map((event) => (
+            <li key={event.id}>
+              <strong>{event.actor}</strong>
+              <span>{event.detail}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </section>
   );
 }
 
@@ -395,7 +558,9 @@ function TaskBoard({
       <div>
         <p className="eyebrow">接單區</p>
         <h3>可接未確認線索</h3>
-        <p>這裡模擬平台接單流程；接單不代表資訊已確認，也不代表可以直接出發。</p>
+        <p>
+          這裡模擬平台接單流程；接單不代表資訊已確認，也不代表可以直接出發。
+        </p>
       </div>
       <div className="task-list">
         {records.slice(0, 5).map((record) => {

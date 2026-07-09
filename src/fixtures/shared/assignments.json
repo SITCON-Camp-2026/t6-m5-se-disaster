@@ -9,5 +9,57 @@
     "volunteerGroupId": "VG-001",
     "peopleCount": 2,
     "status": "confirmed"
+  },
+  {
+    "id": "A-002",
+    "createdAt": "2026-07-20T07:52:00Z",
+    "updatedAt": "2026-07-20T07:55:00Z",
+    "sourceType": "mock",
+    "verificationStatus": "needs_review",
+    "taskId": "T-005",
+    "volunteerGroupId": "VG-002",
+    "peopleCount": 1,
+    "status": "requested",
+    "decidedByRole": "organizer",
+    "decisionReason": "等待服務台確認是否仍收新檢修案。"
+  },
+  {
+    "id": "A-003",
+    "createdAt": "2026-07-20T08:00:00Z",
+    "updatedAt": "2026-07-20T08:20:00Z",
+    "sourceType": "mock",
+    "verificationStatus": "needs_review",
+    "taskId": "T-003",
+    "volunteerGroupId": "VG-003",
+    "peopleCount": 4,
+    "status": "rejected",
+    "decidedByRole": "organizer",
+    "decisionReason": "地點描述不足，且入口道路狹窄，暫不開放自接。"
+  },
+  {
+    "id": "A-004",
+    "createdAt": "2026-07-20T08:25:00Z",
+    "updatedAt": "2026-07-20T08:45:00Z",
+    "sourceType": "mock",
+    "verificationStatus": "verified",
+    "taskId": "T-001",
+    "volunteerGroupId": "VG-004",
+    "peopleCount": 2,
+    "status": "completed",
+    "decidedByRole": "organizer",
+    "decisionReason": "小組回報已完成指定區段清淤，仍需現場確認是否有後續需求。"
+  },
+  {
+    "id": "A-005",
+    "createdAt": "2026-07-20T08:50:00Z",
+    "updatedAt": "2026-07-20T08:50:00Z",
+    "sourceType": "mock",
+    "verificationStatus": "needs_review",
+    "taskId": "T-004",
+    "volunteerGroupId": "VG-005",
+    "peopleCount": 1,
+    "status": "cancelled",
+    "decidedByRole": "organizer",
+    "decisionReason": "涉及個資與醫療需求，改由人工確認後再處理。"
   }
 ]

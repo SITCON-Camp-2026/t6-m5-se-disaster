@@ -8,10 +8,10 @@ import { requestPhase0Prefill } from "../src/features/phase-0/phase0-prefill-api
 
 describe("phase 0 heuristics", () => {
   it("loads the current phase 0 messy data", () => {
-    expect(messyReports).toHaveLength(12);
+    expect(messyReports).toHaveLength(24);
     expect(messyReports.map((record) => record.id)).toEqual(
       Array.from(
-        { length: 12 },
+        { length: 24 },
         (_, index) => `M-${String(index + 1).padStart(3, "0")}`,
       ),
     );

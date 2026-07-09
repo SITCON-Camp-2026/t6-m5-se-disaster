@@ -914,7 +914,7 @@ button:disabled {
 
 .workbench__layout {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(280px, 340px) minmax(0, 1fr);
   gap: 10px;
 }
 
@@ -929,7 +929,7 @@ button:disabled {
 .workbench__queue {
   display: grid;
   align-content: start;
-  gap: 6px;
+  gap: 10px;
 }
 
 .workbench__queue button {
@@ -1003,12 +1003,105 @@ button:disabled {
 }
 
 .category-tile {
+  display: grid;
   grid-template-columns: auto 1fr auto;
   align-items: center;
+  gap: 6px;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  padding: 7px 9px;
+  background: #ffffff;
 }
 
 .category-tile strong {
   font-size: 1.1rem;
+}
+
+.protection-meter {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.protection-meter div {
+  display: grid;
+  gap: 3px;
+  min-height: 62px;
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  animation: soft-pop 420ms ease both;
+}
+
+.protection-meter span {
+  color: #5f6b7a;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.protection-meter strong {
+  color: #17202a;
+  font-size: 1.35rem;
+}
+
+.review-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.review-grid button {
+  position: relative;
+  min-height: 118px;
+  border: 1px solid #cfd8e3;
+  border-radius: 8px;
+  padding: 8px;
+  background: #ffffff;
+  cursor: pointer;
+  overflow: hidden;
+  transition:
+    border-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease,
+    background 160ms ease;
+  animation: tile-in 360ms ease both;
+}
+
+.review-grid button::before {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgb(36 93 157 / 12%), transparent 52%);
+  content: "";
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+
+.review-grid button > * {
+  position: relative;
+}
+
+.review-grid button:hover {
+  border-color: #8aa6c6;
+  box-shadow: 0 8px 18px rgb(23 32 42 / 9%);
+  transform: translateY(-2px);
+}
+
+.review-grid button:hover::before,
+.review-grid button.active::before {
+  opacity: 1;
+}
+
+.review-grid button.active {
+  border-color: #245d9d;
+  background: #eef6ff;
+  box-shadow: 0 0 0 3px rgb(36 93 157 / 14%);
+}
+
+.review-grid__id {
+  color: #17202a;
+  font-size: 1.05rem;
+  font-weight: 900;
 }
 
 .demand-dot {
@@ -1026,6 +1119,11 @@ button:disabled {
   color: #116b37;
   font-size: 0.78rem;
   font-weight: 700;
+}
+
+.draft-pill--muted {
+  background: #eef1f5;
+  color: #5f6b7a;
 }
 
 .demand-badge {
@@ -1078,6 +1176,10 @@ button:disabled {
   gap: 10px;
 }
 
+.workbench__main > * {
+  animation: panel-rise 260ms ease both;
+}
+
 .judgement-card__header {
   display: flex;
   justify-content: space-between;
@@ -1114,6 +1216,33 @@ button:disabled {
 
 .judgement-card h4 {
   margin-bottom: 8px;
+}
+
+.judgement-card--guard {
+  display: grid;
+  align-content: center;
+  min-height: 260px;
+  border-style: dashed;
+  background: #ffffff;
+}
+
+.judgement-card--empty {
+  background: #ffffff;
+}
+
+.draft-guard {
+  display: grid;
+  gap: 4px;
+  border: 1px solid #f1d28a;
+  border-radius: 8px;
+  margin: 10px 0;
+  padding: 10px;
+  background: #fff8e6;
+  color: #5d4200;
+}
+
+.draft-guard strong {
+  color: #8a5a00;
 }
 
 .draft-form__grid {
@@ -1164,6 +1293,51 @@ button:disabled {
 .judgement-card ul {
   padding-left: 20px;
   line-height: 1.6;
+}
+
+@keyframes tile-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes panel-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes soft-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .protection-meter div,
+  .review-grid button,
+  .workbench__main > * {
+    animation: none;
+    transition: none;
+  }
 }
 
 .status-badge,

@@ -11,9 +11,6 @@ import type {
   Phase0MessyRecord,
 } from "./phase0-types";
 
-type DemandFilter = Phase0DemandCategory | "all";
-type ActionabilityFilter = "all" | "blocked" | "review" | "ready";
-
 function createInitialDrafts(records: Phase0MessyRecord[]) {
   return Object.fromEntries(
     records.map((record) => [record.id, createPhase0AgentDraft(record)]),
@@ -29,23 +26,16 @@ function countDrafts(
 
 export function Phase0Workbench({
   records,
-  selectedRecordId,
   onSelect,
 }: {
   records: Phase0MessyRecord[];
-  selectedRecordId: string;
   onSelect: (recordId: string) => void;
 }) {
   const [draftsByRecordId, setDraftsByRecordId] = useState<
     Record<string, Phase0JudgementDraft>
   >({});
-  const [demandFilter, setDemandFilter] = useState<DemandFilter>("all");
-  const [actionabilityFilter, setActionabilityFilter] =
-    useState<ActionabilityFilter>("all");
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
-  const [isDemandFilterOpen, setIsDemandFilterOpen] = useState(false);
-  const [isActionabilityFilterOpen, setIsActionabilityFilterOpen] =
-    useState(false);
+  const [editingRecordId, setEditingRecordId] = useState<string | null>(null);
   const [prefillStatus, setPrefillStatus] = useState<
     "idle" | "loading" | "ready" | "error"
   >("loading");
@@ -53,29 +43,11 @@ export function Phase0Workbench({
     null,
   );
 
-  const visibleRecords = useMemo(() => {
-    return records.filter((record) => {
-      const draft = draftsByRecordId[record.id];
-      const matchesDemand =
-        demandFilter === "all" || draft?.demandCategory === demandFilter;
-      const matchesActionability =
-        actionabilityFilter === "all" ||
-        (actionabilityFilter === "blocked" &&
-          draft?.unsafeToActDirectly === true) ||
-        (actionabilityFilter === "review" &&
-          draft?.needsHumanReview === true) ||
-        (actionabilityFilter === "ready" &&
-          draft &&
-          !draft.unsafeToActDirectly &&
-          !draft.needsHumanReview);
-
-      return matchesDemand && matchesActionability;
-    });
-  }, [actionabilityFilter, demandFilter, draftsByRecordId, records]);
-
-  const selectedRecord =
-    records.find((record) => record.id === selectedRecordId) ?? records[0];
-  const selectedDraft = draftsByRecordId[selectedRecord.id];
+  const editingRecord =
+    records.find((record) => record.id === editingRecordId) ?? null;
+  const selectedDraft = editingRecord
+    ? draftsByRecordId[editingRecord.id]
+    : null;
   const categoryCounts = useMemo(
     () =>
       Object.fromEntries(
@@ -89,7 +61,7 @@ export function Phase0Workbench({
       ) as Record<Phase0DemandCategory, number>,
     [draftsByRecordId],
   );
-  const actionabilityCounts = useMemo(
+  const protectionCounts = useMemo(
     () => ({
       blocked: countDrafts(
         draftsByRecordId,
@@ -106,15 +78,6 @@ export function Phase0Workbench({
     }),
     [draftsByRecordId],
   );
-
-  useEffect(() => {
-    if (
-      visibleRecords.length > 0 &&
-      !visibleRecords.some((record) => record.id === selectedRecordId)
-    ) {
-      onSelect(visibleRecords[0].id);
-    }
-  }, [onSelect, selectedRecordId, visibleRecords]);
 
   useEffect(() => {
     let isMounted = true;
@@ -160,8 +123,14 @@ export function Phase0Workbench({
     });
   }
 
+  function openEditor(recordId: string) {
+    setEditingRecordId(recordId);
+    onSelect(recordId);
+  }
+
   function resetDrafts() {
     setPrefillStatus("loading");
+    setEditingRecordId(null);
     requestPhase0Prefill(records)
       .then((response) => {
         setDraftsByRecordId(response.drafts);
@@ -173,7 +142,6 @@ export function Phase0Workbench({
         setPrefillGeneratedAt(null);
         setPrefillStatus("error");
       });
-    onSelect(records[0]?.id ?? "");
   }
 
   return (
@@ -204,7 +172,7 @@ export function Phase0Workbench({
       </div>
 
       <div className="workbench__layout">
-        <aside className="workbench__queue" aria-label="選擇原始資訊">
+        <aside className="workbench__queue" aria-label="選擇待確認事項">
           <div className="category-dashboard" aria-label="分類總覽">
             <button
               aria-expanded={isCategoryOpen}
@@ -218,170 +186,105 @@ export function Phase0Workbench({
             {isCategoryOpen ? (
               <div className="category-dashboard__grid">
                 {demandCategoryOptions.map((option) => (
-                  <button
-                    className={`category-tile ${demandFilter === option.value ? "active" : ""}`}
-                    key={option.value}
-                    type="button"
-                    onClick={() => setDemandFilter(option.value)}
-                  >
+                  <div className="category-tile" key={option.value}>
                     <span
                       className={`demand-dot demand-${option.value}`}
                       aria-hidden="true"
                     />
                     <span>{option.label}</span>
                     <strong>{categoryCounts[option.value] ?? 0}</strong>
-                  </button>
+                  </div>
                 ))}
               </div>
             ) : null}
           </div>
 
-          <div className="filter-panel">
-            <button
-              aria-expanded={isDemandFilterOpen}
-              className="filter-panel__toggle"
-              type="button"
-              onClick={() => setIsDemandFilterOpen((current) => !current)}
-            >
-              <span>需求分類篩選</span>
-              <strong>{isDemandFilterOpen ? "收合" : "展開"}</strong>
-            </button>
-            {isDemandFilterOpen ? (
-              <>
-                <button
-                  className={demandFilter === "all" ? "active" : ""}
-                  type="button"
-                  onClick={() => setDemandFilter("all")}
-                >
-                  全部
-                  <span>{Object.keys(draftsByRecordId).length} 筆</span>
-                </button>
-                {demandCategoryOptions.map((option) => (
-                  <button
-                    className={demandFilter === option.value ? "active" : ""}
-                    key={option.value}
-                    type="button"
-                    onClick={() => setDemandFilter(option.value)}
+          <div className="protection-meter" aria-label="防護摘要">
+            <div>
+              <span>先擋下</span>
+              <strong>{protectionCounts.blocked}</strong>
+            </div>
+            <div>
+              <span>待人工確認</span>
+              <strong>{protectionCounts.review}</strong>
+            </div>
+            <div>
+              <span>可再整理</span>
+              <strong>{protectionCounts.ready}</strong>
+            </div>
+          </div>
+
+          <div className="review-grid" aria-label="待確認事項九宮格">
+            {records.map((record) => (
+              <button
+                className={record.id === editingRecordId ? "active" : ""}
+                key={record.id}
+                type="button"
+                onClick={() => openEditor(record.id)}
+              >
+                <span className="review-grid__id">{record.id}</span>
+                <StatusBadge status={record.verificationStatus} />
+                {draftsByRecordId[record.id] ? (
+                  <span
+                    className={`demand-badge demand-${draftsByRecordId[record.id].demandCategory}`}
                   >
-                    <span
-                      className={`demand-dot demand-${option.value}`}
-                      aria-hidden="true"
-                    />
-                    {option.label}
-                    <span>{categoryCounts[option.value] ?? 0} 筆</span>
-                  </button>
-                ))}
-              </>
-            ) : null}
+                    {
+                      demandCategoryLabels[
+                        draftsByRecordId[record.id].demandCategory
+                      ]
+                    }
+                  </span>
+                ) : (
+                  <span className="draft-pill draft-pill--muted">未建草稿</span>
+                )}
+              </button>
+            ))}
           </div>
-
-          <div className="filter-panel">
-            <button
-              aria-expanded={isActionabilityFilterOpen}
-              className="filter-panel__toggle"
-              type="button"
-              onClick={() =>
-                setIsActionabilityFilterOpen((current) => !current)
-              }
-            >
-              <span>可行動狀態</span>
-              <strong>{isActionabilityFilterOpen ? "收合" : "展開"}</strong>
-            </button>
-            {isActionabilityFilterOpen ? (
-              <>
-                <button
-                  className={actionabilityFilter === "all" ? "active" : ""}
-                  type="button"
-                  onClick={() => setActionabilityFilter("all")}
-                >
-                  全部
-                  <span>{Object.keys(draftsByRecordId).length} 筆</span>
-                </button>
-                <button
-                  className={actionabilityFilter === "blocked" ? "active" : ""}
-                  type="button"
-                  onClick={() => setActionabilityFilter("blocked")}
-                >
-                  不能直接行動
-                  <span>{actionabilityCounts.blocked} 筆</span>
-                </button>
-                <button
-                  className={actionabilityFilter === "review" ? "active" : ""}
-                  type="button"
-                  onClick={() => setActionabilityFilter("review")}
-                >
-                  待人工確認
-                  <span>{actionabilityCounts.review} 筆</span>
-                </button>
-                <button
-                  className={actionabilityFilter === "ready" ? "active" : ""}
-                  type="button"
-                  onClick={() => setActionabilityFilter("ready")}
-                >
-                  可進一步整理
-                  <span>{actionabilityCounts.ready} 筆</span>
-                </button>
-              </>
-            ) : null}
-          </div>
-
-          {visibleRecords.map((record) => (
-            <button
-              className={record.id === selectedRecord.id ? "active" : ""}
-              key={record.id}
-              type="button"
-              onClick={() => onSelect(record.id)}
-            >
-              <span>{record.id}</span>
-              <StatusBadge status={record.verificationStatus} />
-              {draftsByRecordId[record.id] ? (
-                <span
-                  className={`demand-badge demand-${draftsByRecordId[record.id].demandCategory}`}
-                >
-                  {
-                    demandCategoryLabels[
-                      draftsByRecordId[record.id].demandCategory
-                    ]
-                  }
-                </span>
-              ) : null}
-              {draftsByRecordId[record.id] ? (
-                <span className="draft-pill">agent 草稿</span>
-              ) : null}
-            </button>
-          ))}
-          {visibleRecords.length === 0 ? (
-            <p className="filter-empty">這個分類目前沒有草稿</p>
-          ) : null}
         </aside>
 
         <div className="workbench__main">
-          <RecordCard record={selectedRecord} />
+          {editingRecord ? (
+            <>
+              <RecordCard record={editingRecord} />
 
-          {selectedDraft ? (
-            <Phase0JudgementCard
-              judgement={selectedDraft}
-              record={selectedRecord}
-              onChange={updateDraft}
-              onDelete={() => deleteDraft(selectedRecord.id)}
-            />
+              {selectedDraft ? (
+                <Phase0JudgementCard
+                  judgement={selectedDraft}
+                  record={editingRecord}
+                  onChange={updateDraft}
+                  onDelete={() => deleteDraft(editingRecord.id)}
+                />
+              ) : (
+                <article className="judgement-card judgement-card--empty">
+                  <div className="judgement-card__header">
+                    <div>
+                      <p className="eyebrow">尚未建立草稿</p>
+                      <h3>{editingRecord.id} 仍只保留原始資訊</h3>
+                    </div>
+                    <button
+                      className="button"
+                      type="button"
+                      onClick={() => createDraft(editingRecord)}
+                    >
+                      建立這筆草稿
+                    </button>
+                  </div>
+                  <p>
+                    建立草稿後，請只填入原文能支持的候選判斷；不確定之處要留在人工確認與不能直接變任務的欄位。
+                  </p>
+                </article>
+              )}
+            </>
           ) : (
-            <article className="judgement-card">
+            <article className="judgement-card judgement-card--guard">
               <div className="judgement-card__header">
                 <div>
-                  <p className="eyebrow">尚未建立草稿</p>
-                  <h3>{selectedRecord.id} 仍只保留原始資訊</h3>
+                  <p className="eyebrow">防護中</p>
+                  <h3>先選一個待確認事項，再進入狀態編輯</h3>
                 </div>
-                <button
-                  className="button"
-                  type="button"
-                  onClick={() => createDraft(selectedRecord)}
-                >
-                  建立這筆草稿
-                </button>
               </div>
               <p>
-                建立草稿後，請只填入原文能支持的候選判斷；不確定之處要留在人工確認與不能直接變任務的欄位。
+                工作台不會自動把未查核資訊變成任務。請從左側九宮格點選一筆資料，確認原文、來源與阻擋原因後再修改狀態。
               </p>
             </article>
           )}

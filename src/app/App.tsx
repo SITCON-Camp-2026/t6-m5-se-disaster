@@ -50,7 +50,7 @@ export function App() {
   const [sessionUser, setSessionUser] = useState<SessionUser | null>(null);
   const [notice, setNotice] = useState("");
   const [activeTab, setActiveTab] = useState<TabKey>("role");
-  const [selectedRecordId, setSelectedRecordId] = useState(
+  const [, setSelectedRecordId] = useState(
     backendSnapshot.records[0]?.id ?? "",
   );
   const {
@@ -110,6 +110,22 @@ export function App() {
   function completeTask(recordId: string) {
     if (!sessionUser) return;
     setBackendSnapshot(backend.completeTask(recordId, sessionUser.name));
+  }
+
+  function reopenTask(recordId: string) {
+    if (!sessionUser) return;
+    try {
+      setBackendSnapshot(backend.reopenTask(recordId, sessionUser));
+      setNotice("");
+    } catch (error) {
+      if (error instanceof BackendAuthorizationError) {
+        setBackendSnapshot(backend.getSnapshot());
+        setNotice(error.message);
+        return;
+      }
+
+      throw error;
+    }
   }
 
   function reviewQualityIssue(issueId: string) {
@@ -191,6 +207,7 @@ export function App() {
             onCreateRecord={createRecord}
             onAcceptTask={acceptTask}
             onCompleteTask={completeTask}
+            onReopenTask={reopenTask}
             onReviewQualityIssue={reviewQualityIssue}
             onOpenRaw={() => setActiveTab("raw")}
             onOpenWorkbench={() => setActiveTab("workbench")}
@@ -206,7 +223,6 @@ export function App() {
         ) : (
           <Phase0Workbench
             records={records}
-            selectedRecordId={selectedRecordId}
             onSelect={setSelectedRecordId}
           />
         )}
@@ -225,6 +241,7 @@ function RoleScreen({
   onCreateRecord,
   onAcceptTask,
   onCompleteTask,
+  onReopenTask,
   onReviewQualityIssue,
   onOpenRaw,
   onOpenWorkbench,
@@ -238,6 +255,7 @@ function RoleScreen({
   onCreateRecord: (rawText: string, locationText: string) => void;
   onAcceptTask: (recordId: string) => void;
   onCompleteTask: (recordId: string) => void;
+  onReopenTask: (recordId: string) => void;
   onReviewQualityIssue: (issueId: string) => void;
   onOpenRaw: () => void;
   onOpenWorkbench: () => void;
@@ -377,6 +395,14 @@ function RoleScreen({
         </div>
       </div>
       <Leaderboard taskAssignments={taskAssignments} />
+      <TaskBoard
+        records={records}
+        taskAssignments={taskAssignments}
+        onAcceptTask={onAcceptTask}
+        onCompleteTask={onCompleteTask}
+        onReopenTask={onReopenTask}
+        mode="manage"
+      />
       <DataQualityQueue
         issues={qualityIssues}
         onReviewIssue={onReviewQualityIssue}
@@ -438,7 +464,7 @@ function DataQualityQueue({
         </div>
         <span>{openIssueCount} 個未處理</span>
       </div>
-      <div className="quality-queue__filters" aria-label="資料品質篩選">
+      <div className="quality-queue__filters" aria-label="資料品質狀態">
         {filterOptions.map((option) => (
           <button
             key={option.key}
@@ -453,7 +479,7 @@ function DataQualityQueue({
         ))}
       </div>
       {visibleIssues.length === 0 ? (
-        <p className="backend-status__empty">這個篩選目前沒有資料品質風險</p>
+        <p className="backend-status__empty">這個狀態目前沒有資料品質風險</p>
       ) : (
         <ol className="quality-queue__list">
           {visibleIssues.map((issue) => (
@@ -547,19 +573,25 @@ function TaskBoard({
   taskAssignments,
   onAcceptTask,
   onCompleteTask,
+  onReopenTask,
+  mode = "claim",
 }: {
   records: Phase0MessyRecord[];
   taskAssignments: Record<string, TaskAssignment>;
   onAcceptTask: (recordId: string) => void;
   onCompleteTask: (recordId: string) => void;
+  onReopenTask?: (recordId: string) => void;
+  mode?: "claim" | "manage";
 }) {
   return (
     <section className="task-board" aria-label="接單任務">
       <div>
-        <p className="eyebrow">接單區</p>
-        <h3>可接未確認線索</h3>
+        <p className="eyebrow">{mode === "manage" ? "任務管理" : "接單區"}</p>
+        <h3>{mode === "manage" ? "任務接單狀態" : "可接未確認線索"}</h3>
         <p>
-          這裡模擬平台接單流程；接單不代表資訊已確認，也不代表可以直接出發。
+          {mode === "manage"
+            ? "管理者可把已接單或已完成的 demo 任務放回待接單，方便重新媒合。"
+            : "這裡模擬平台接單流程；接單不代表資訊已確認，也不代表可以直接出發。"}
         </p>
       </div>
       <div className="task-list">
@@ -576,10 +608,24 @@ function TaskBoard({
                     ? assignment.status === "completed"
                       ? `已完成：${assignment.assignee}`
                       : `已接單：${assignment.assignee}`
-                    : "尚未接單"}
+                    : "待接單"}
                 </span>
               </div>
-              {assignment?.status === "completed" ? (
+              {mode === "manage" ? (
+                assignment ? (
+                  <button
+                    className="button"
+                    type="button"
+                    onClick={() => onReopenTask?.(record.id)}
+                  >
+                    設為待接單
+                  </button>
+                ) : (
+                  <button className="button" type="button" disabled>
+                    待接單
+                  </button>
+                )
+              ) : assignment?.status === "completed" ? (
                 <button className="button" type="button" disabled>
                   已完成
                 </button>

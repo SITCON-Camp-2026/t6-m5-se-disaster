@@ -61,7 +61,7 @@ export function Phase0JudgementCard({
     >
       <div className="judgement-card__header">
         <div>
-          <p className="eyebrow">整理草稿</p>
+          <p className="eyebrow">狀態編輯</p>
           <h3>{record.id} 的候選判斷</h3>
           <span className={`demand-badge demand-${judgement.demandCategory}`}>
             {
@@ -83,6 +83,12 @@ export function Phase0JudgementCard({
       <p>
         這份草稿只是一個候選整理，不能取代人工確認，也不能把原始資訊變成已確認事實。
       </p>
+
+      <div className="draft-guard" role="note">
+        <strong>防護檢查</strong>
+        <span>未完成人工確認前，狀態只能停留在候選整理。</span>
+        <span>若來源、時間或地點不足，請維持不能直接變成志工任務。</span>
+      </div>
 
       <div className="draft-form__grid">
         <label>

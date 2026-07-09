@@ -40,6 +40,8 @@ export type AuditAction =
   | "comment_added"
   | "task_accepted"
   | "task_completed"
+  | "task_reopened"
+  | "task_reopen_denied"
   | "quality_issue_reviewed"
   | "quality_issue_review_denied";
 
@@ -341,6 +343,25 @@ export function createDemoBackend() {
         taskAssignments[recordId]?.assignee ?? assignee,
         `完成 demo 任務 ${recordId}`,
       );
+
+      return createSnapshot();
+    },
+
+    reopenTask(recordId: string, actor: SessionUser) {
+      if (actor.role !== "organizer") {
+        authorizationFailures += 1;
+        appendAudit(
+          "task_reopen_denied",
+          actor.name,
+          "嘗試把任務設為待接單但權限不足",
+        );
+        throw new BackendAuthorizationError();
+      }
+
+      const nextTaskAssignments = { ...taskAssignments };
+      delete nextTaskAssignments[recordId];
+      taskAssignments = nextTaskAssignments;
+      appendAudit("task_reopened", actor.name, `將 ${recordId} 設為待接單`);
 
       return createSnapshot();
     },

@@ -68,6 +68,15 @@ describe("demo backend", () => {
     );
     expect(afterComplete.summary.completedTasks).toBeGreaterThanOrEqual(1);
     expect(afterComplete.auditEvents[0]?.action).toBe("task_completed");
+
+    const afterReopen = demoBackend.reopenTask(createdRecord.id, {
+      name: "整理者",
+      role: "organizer",
+    });
+    expect(afterReopen.taskAssignments[createdRecord.id]).toBeUndefined();
+    expect(afterReopen.summary.acceptedTasks).toBe(0);
+    expect(afterReopen.summary.completedTasks).toBe(0);
+    expect(afterReopen.auditEvents[0]?.action).toBe("task_reopened");
   });
 
   it("returns data quality issues for high-risk records", () => {
@@ -121,5 +130,23 @@ describe("demo backend", () => {
     const snapshot = demoBackend.getSnapshot();
     expect(snapshot.summary.authorizationFailures).toBe(1);
     expect(snapshot.auditEvents[0]?.action).toBe("quality_issue_review_denied");
+  });
+
+  it("rejects reopening tasks from non-organizer users", () => {
+    const demoBackend = createDemoBackend();
+    const record = demoBackend.getSnapshot().records[0];
+    demoBackend.acceptTask(record.id, "回報者");
+
+    expect(() =>
+      demoBackend.reopenTask(record.id, {
+        name: "回報者",
+        role: "reporter",
+      }),
+    ).toThrow(BackendAuthorizationError);
+
+    const snapshot = demoBackend.getSnapshot();
+    expect(snapshot.taskAssignments[record.id]?.status).toBe("accepted");
+    expect(snapshot.summary.authorizationFailures).toBe(1);
+    expect(snapshot.auditEvents[0]?.action).toBe("task_reopen_denied");
   });
 });

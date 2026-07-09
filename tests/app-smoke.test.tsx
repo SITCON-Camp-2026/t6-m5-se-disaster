@@ -111,6 +111,12 @@ describe("App", () => {
     expect(screen.getByText("任務完成數")).toBeInTheDocument();
     expect(screen.getAllByText("小明").length).toBeGreaterThan(0);
     expect(screen.getByText("1 件")).toBeInTheDocument();
+    expect(screen.getByText("任務接單狀態")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "設為待接單" }));
+    expect(screen.getAllByText("待接單").length).toBeGreaterThan(0);
+    expect(screen.queryByText("1 件")).not.toBeInTheDocument();
+    expect(screen.getByText(/將 .* 設為待接單/)).toBeInTheDocument();
   });
 
   it("keeps the home page focused on phase 0 tabs", () => {
@@ -161,31 +167,25 @@ describe("App", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
-    expect(await screen.findByText("整理草稿")).toBeInTheDocument();
+    expect(
+      await screen.findByText("先選一個待確認事項，再進入狀態編輯"),
+    ).toBeInTheDocument();
     expect(screen.getAllByText(/預填 API/).length).toBeGreaterThan(0);
     expect(screen.getByText("分類總覽")).toBeInTheDocument();
-    expect(screen.getByText("可行動狀態")).toBeInTheDocument();
+    expect(screen.getByText("防護中")).toBeInTheDocument();
+    expect(screen.getByLabelText("待確認事項九宮格")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /分類總覽/ })).toHaveAttribute(
       "aria-expanded",
       "false",
     );
-    expect(
-      screen.getByRole("button", { name: /需求分類篩選/ }),
-    ).toHaveAttribute("aria-expanded", "false");
-    expect(screen.getByRole("button", { name: /可行動狀態/ })).toHaveAttribute(
-      "aria-expanded",
-      "false",
-    );
-    fireEvent.click(screen.getByRole("button", { name: /需求分類篩選/ }));
-    const suppliesFilter = screen.getAllByRole("button", {
-      name: /物資需求/,
-    })[0];
-    expect(suppliesFilter).toBeInTheDocument();
+    expect(screen.queryByText(/篩選/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/代辦事項/)).not.toBeInTheDocument();
     expect(screen.getAllByText("人力需求").length).toBeGreaterThan(0);
     expect(screen.queryByText("第一階段完成檢查")).not.toBeInTheDocument();
 
-    fireEvent.click(suppliesFilter);
     fireEvent.click(screen.getByRole("button", { name: /M-003/ }));
+    expect(screen.getByText("狀態編輯")).toBeInTheDocument();
+    expect(screen.getByText("防護檢查")).toBeInTheDocument();
 
     fireEvent.change(screen.getByLabelText("候選類型"), {
       target: { value: "site_status_candidate" },
@@ -194,7 +194,6 @@ describe("App", () => {
       "site_status_candidate",
     );
 
-    fireEvent.click(screen.getAllByRole("button", { name: /全部/ })[0]);
     fireEvent.click(screen.getByRole("button", { name: /M-003/ }));
     fireEvent.click(screen.getByRole("button", { name: "刪除草稿" }));
     expect(screen.getByText("M-003 仍只保留原始資訊")).toBeInTheDocument();
@@ -203,7 +202,9 @@ describe("App", () => {
     expect(screen.getByText("M-003 的候選判斷")).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "重新呼叫預填 API" }));
-    expect(await screen.findByText("M-001 的候選判斷")).toBeInTheDocument();
+    expect(
+      await screen.findByText("先選一個待確認事項，再進入狀態編輯"),
+    ).toBeInTheDocument();
   });
 
   it("collapses the category overview", async () => {
@@ -211,7 +212,9 @@ describe("App", () => {
     loginWithCaptcha();
     fireEvent.click(screen.getByRole("button", { name: "整理工作台" }));
 
-    expect(await screen.findByText("整理草稿")).toBeInTheDocument();
+    expect(
+      await screen.findByText("先選一個待確認事項，再進入狀態編輯"),
+    ).toBeInTheDocument();
     const categoryToggle = screen.getByRole("button", {
       name: /分類總覽/,
     });
@@ -219,22 +222,7 @@ describe("App", () => {
 
     fireEvent.click(categoryToggle);
     expect(categoryToggle).toHaveAttribute("aria-expanded", "true");
-
-    const demandToggle = screen.getByRole("button", {
-      name: /需求分類篩選/,
-    });
-    expect(demandToggle).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(demandToggle);
-    expect(demandToggle).toHaveAttribute("aria-expanded", "true");
-
-    const actionabilityToggle = screen.getByRole("button", {
-      name: /可行動狀態/,
-    });
-    expect(actionabilityToggle).toHaveAttribute("aria-expanded", "false");
-
-    fireEvent.click(actionabilityToggle);
-    expect(actionabilityToggle).toHaveAttribute("aria-expanded", "true");
+    expect(screen.queryByText(/篩選/)).not.toBeInTheDocument();
   });
 
   it("lets users add raw info and comment", () => {

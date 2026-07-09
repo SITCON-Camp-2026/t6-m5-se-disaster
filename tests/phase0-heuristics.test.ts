@@ -4,6 +4,7 @@ import {
   createPhase0AgentDraft,
   createPhase0Judgement,
 } from "../src/features/phase-0/phase0-heuristics";
+import { requestPhase0Prefill } from "../src/features/phase-0/phase0-prefill-api";
 
 describe("phase 0 heuristics", () => {
   it("loads the current phase 0 messy data", () => {
@@ -65,5 +66,18 @@ describe("phase 0 heuristics", () => {
     expect(drafts.flatMap((draft) => draft.evidence).join(" ")).not.toContain(
       "已確認",
     );
+  });
+
+  it("returns API prefill drafts for classification without confirming records", async () => {
+    const response = await requestPhase0Prefill(messyReports);
+    const drafts = Object.values(response.drafts);
+
+    expect(response.generatedAt).toEqual(expect.any(String));
+    expect(drafts).toHaveLength(messyReports.length);
+    expect(drafts.some((draft) => draft.demandCategory !== "unknown")).toBe(
+      true,
+    );
+    expect(drafts.every((draft) => draft.unsafeToActDirectly)).toBe(true);
+    expect(drafts.every((draft) => draft.needsHumanReview)).toBe(true);
   });
 });

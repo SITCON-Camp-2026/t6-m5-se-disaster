@@ -1,17 +1,56 @@
+import { useState } from "react";
 import { SourceLabel } from "../../components/SourceLabel";
 import { StatusBadge } from "../../components/StatusBadge";
 import { formatDateTime } from "../../lib/date";
 import type { Phase0MessyRecord } from "./phase0-types";
 
+export type RecordInteraction = {
+  liked: boolean;
+  likeCount: number;
+  comments: string[];
+};
+
 export function Phase0RawInfoPanel({
   records,
   selectedRecordId,
   onSelect,
+  interactions = {},
+  onCreateRecord,
+  onToggleLike,
+  onAddComment,
 }: {
   records: Phase0MessyRecord[];
   selectedRecordId: string;
   onSelect: (recordId: string) => void;
+  interactions: Record<string, RecordInteraction>;
+  onCreateRecord: (rawText: string, locationText: string) => void;
+  onToggleLike: (recordId: string) => void;
+  onAddComment: (recordId: string, comment: string) => void;
 }) {
+  const [rawText, setRawText] = useState("");
+  const [locationText, setLocationText] = useState("");
+  const [commentDrafts, setCommentDrafts] = useState<Record<string, string>>(
+    {},
+  );
+
+  function submitRecord(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!rawText.trim()) return;
+    onCreateRecord(rawText, locationText);
+    setRawText("");
+    setLocationText("");
+  }
+
+  function submitComment(recordId: string) {
+    const comment = commentDrafts[recordId]?.trim();
+    if (!comment) return;
+    onAddComment(recordId, comment);
+    setCommentDrafts((currentDrafts) => ({
+      ...currentDrafts,
+      [recordId]: "",
+    }));
+  }
+
   return (
     <div className="phase0-raw">
       <div className="panel__header">
@@ -22,26 +61,96 @@ export function Phase0RawInfoPanel({
         <p>{records.length} 筆資料</p>
       </div>
 
+      <form className="add-record-form" onSubmit={submitRecord}>
+        <label>
+          新增未確認資訊
+          <textarea
+            placeholder="輸入剛收到的線索，保留不確定描述，不要自行補成事實。"
+            rows={3}
+            value={rawText}
+            onChange={(event) => setRawText(event.target.value)}
+          />
+        </label>
+        <div className="add-record-form__row">
+          <label>
+            地點描述
+            <input
+              placeholder="可留空或填模糊地點"
+              value={locationText}
+              onChange={(event) => setLocationText(event.target.value)}
+            />
+          </label>
+          <button className="button button--primary" type="submit">
+            新增資訊
+          </button>
+        </div>
+      </form>
+
       <div className="grid">
-        {records.map((record) => (
-          <article
-            className={`record-card ${record.id === selectedRecordId ? "record-card--selected" : ""}`}
-            key={record.id}
-          >
-            <div className="record-card__header">
-              <h3>{record.id}</h3>
-              <StatusBadge status={record.verificationStatus} />
-            </div>
-            <p>{record.rawText}</p>
-            <div className="record-card__meta">
-              <SourceLabel sourceType={record.sourceType} />
-              <span>更新：{formatDateTime(record.updatedAt)}</span>
-            </div>
-            <button type="button" onClick={() => onSelect(record.id)}>
-              送到整理工作台
-            </button>
-          </article>
-        ))}
+        {records.map((record) => {
+          const interaction = interactions[record.id] ?? {
+            liked: false,
+            likeCount: 0,
+            comments: [],
+          };
+
+          return (
+            <article
+              className={`record-card ${record.id === selectedRecordId ? "record-card--selected" : ""}`}
+              key={record.id}
+            >
+              <div className="record-card__header">
+                <h3>{record.id}</h3>
+                <StatusBadge status={record.verificationStatus} />
+              </div>
+              <p>{record.rawText}</p>
+              <div className="record-card__meta">
+                <SourceLabel sourceType={record.sourceType} />
+                <span>更新：{formatDateTime(record.updatedAt)}</span>
+              </div>
+              <div className="record-card__actions">
+                <button type="button" onClick={() => onSelect(record.id)}>
+                  送到整理工作台
+                </button>
+                <button
+                  className={interaction.liked ? "liked" : ""}
+                  type="button"
+                  onClick={() => onToggleLike(record.id)}
+                >
+                  愛心 {interaction.likeCount}
+                </button>
+              </div>
+              <div className="comments">
+                <h4>留言</h4>
+                {interaction.comments.length === 0 ? (
+                  <p className="comments__empty">尚無留言</p>
+                ) : (
+                  <ul>
+                    {interaction.comments.map((comment, index) => (
+                      <li key={`${record.id}-${index}`}>{comment}</li>
+                    ))}
+                  </ul>
+                )}
+                <div className="comment-form">
+                  <input
+                    aria-label={`${record.id} 留言`}
+                    placeholder="補充觀察或疑問"
+                    value={commentDrafts[record.id] ?? ""}
+                    onChange={(event) =>
+                      setCommentDrafts((currentDrafts) => ({
+                        ...currentDrafts,
+                        [record.id]: event.target.value,
+                      }))
+                    }
+                  />
+                  <button type="button" onClick={() => submitComment(record.id)}>
+                    留言
+                  </button>
+                </div>
+              </div>
+            </article>
+          );
+        })}
       </div>
     </div>
   );

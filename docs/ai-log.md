@@ -32,6 +32,7 @@
 | 10:11 | Phase 0 | 預填整理工作台資料 | 建議不要串接真實 runtime AI，改用 coding agent 產生保守預填草稿並保持可編輯          | 採用        | Phase 0 禁止外部 API 與 runtime LLM；預填草稿仍標示需要人工確認      | `src/features/phase-0/phase0-heuristics.ts`, `src/features/phase-0/Phase0Workbench.tsx`    |
 | 10:30 | Phase 0 | 加入需求分類與篩選 | 建議新增人力、物資、專業支援、地點狀態、公告資訊與待判斷分類，並用顏色標示及篩選     | 採用        | 分類能幫助整理工作台掃描資料，但仍是可編輯草稿，不代表已確認         | `src/features/phase-0/phase0-labels.ts`, `src/features/phase-0/Phase0Workbench.tsx`        |
 | 10:35 | Phase 0 | 移除畫面完成檢查   | 建議刪除整理工作台右側的「第一階段完成檢查」，保留文件紀錄與重設草稿入口             | 採用        | 畫面更專注在原始資訊、分類篩選與草稿編輯；交付檢查保留在文件中       | `src/features/phase-0/Phase0Workbench.tsx`, `src/styles/global.css`                        |
+| 13:58 | Release 01 | Persona 訪談與需求彙整 | 依照三個 persona 產生訪談紀錄，彙整共同需求、衝突需求與 v1 取捨草稿 | 採用 | 這階段只做需求分析，不改 `src/`；採用「先服務資訊整理者」作為可討論的人類決策草稿 | `docs/interview-notes.md`, `docs/interview-summary.md`, `docs/decisions.md` |
 
 ## 範例
 
